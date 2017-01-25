@@ -1,0 +1,5 @@
+28a29
+> #include "backlight.h"
+66a68
+>     backlight_init_pwm();
+

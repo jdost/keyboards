@@ -1,0 +1,35 @@
+#!/bin/bash
+
+TMK_DIR=/opt/tmk
+FOLDER=""
+BIN=tmk.hex
+REAL_HOME=$(dirname $(realpath $0))
+KEYMAP=default
+
+case "$1" in
+  "gh60"|"kc60")
+    FOLDER=kc60
+    ;;
+  "van"|"minivan"|"tv44")
+    FOLDER=tv44
+    BUILDDIR=minivan
+    ;;
+  "hhkb")
+    FOLDER=hhkb
+    ;;
+  "infinity")
+    FOLDER=infinity_chibios
+    BIN=build/tmk.bin
+    BUILDDIR=infinity
+    ;;
+esac
+
+if [ -z "$FOLDER" ]; then
+  echo "No valid keyboard specified"
+  exit 1
+fi
+
+cd $TMK_DIR/keyboard/$FOLDER
+KEYMAP=$KEYMAP make
+mv $BIN $REAL_HOME/$BUILDDIR/tmk.hex
+make clean
