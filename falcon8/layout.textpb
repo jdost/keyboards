@@ -1,0 +1,88 @@
+# Looking at the top of the Max Falcon-8:
+#
+# | 1 | 2 | 3 | 4 |
+# |---|---|---|---|
+# | 5 | 6 | 7 | 8 |
+#
+# For full list of possible `key` values, see ../proto/hid.proto.
+# For full list of possible `modifier` values, see ../proto/firmware_keys.proto.
+
+# KVM port 1
+button1 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_1_Exclamation]
+    }
+  }
+}
+
+# KVM port 2
+button2 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_2_At]
+    }
+  }
+}
+
+# KVM port 3
+button3 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_3_Pound]
+    }
+  }
+}
+
+# KVM port 4
+button4 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_4_Dollar]
+    }
+  }
+}
+
+# KVM Prev Port (ACTIVE_PORT--)
+button5 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_PageDown]
+    }
+  }
+}
+
+# KVM Next Port (ACTIVE_PORT++)
+button6 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_PageUp]
+    }
+  }
+}
+
+# KVM Toggle Auto Switching (?)
+button7 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_Spacebar]
+    }
+  }
+}
+
+# KVM Toggle Buzzer Sound (?)
+button8 {
+  program {
+    program_set {
+      milliseconds_between_keys: 5
+      keys: [KEY_ScrollLock, KEY_ScrollLock, KEY_F11]
+    }
+  }
+}

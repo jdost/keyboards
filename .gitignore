@@ -1,2 +1,7 @@
 *.hex
+*.bin
 .docker_image_id
+# This is the mountpoint for the device to "flash" it
+tmp/
+# This file is fetched externally, just stored locally
+falcon8/myfalcon

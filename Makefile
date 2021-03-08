@@ -1,4 +1,4 @@
-.PHONY: image kc60 flash-kc60 minivan flash-minivan hhkb flash-hhkb infinity flash-infinity
+.PHONY: image kc60 flash-kc60 minivan flash-minivan hhkb flash-hhkb infinity flash-infinity falcon8 flash-falcon8
 DOCKER_IMAGE_TAG=qmk_builder
 KEYMAP_NAME=local
 PAUSE=5
@@ -10,7 +10,7 @@ CPL="\\033[1F"
 
 .docker_image_id: Dockerfile docker-entrypoint.sh
 	@echo -e "${HLT} >>${RST} Building container image"
-	@docker build -t "${DOCKER_IMAGE_TAG}" .
+	@docker build --force-rm -t "${DOCKER_IMAGE_TAG}" .
 	@docker images --quiet "${DOCKER_IMAGE_TAG}" > .docker_image_id
 image: .docker_image_id
 
@@ -135,3 +135,53 @@ flash-infinity: infinity
 	@dfu-programmer atmega32u4 flash infinity/firmware.hex
 	@dfu-programmer atmega32u4 reset
 	@echo -e "${HLT} >>${RST} Finished"
+# DZ60 keyboard rules...
+dz60/firmware.hex: dz60/keymap.c dz60/config.h dz60/rules.mk
+	@echo -e "${HLT} >>${RST} Creating and populating building image for dz60"
+	@docker rm "${DOCKER_IMAGE_TAG}__dz60" &> /dev/null || true
+	@docker create -it --name "${DOCKER_IMAGE_TAG}__dz60" "${DOCKER_IMAGE_TAG}" make dztech/dz60rgb_ansi/v2:${KEYMAP_NAME} > /dev/null
+	@docker cp dz60 "${DOCKER_IMAGE_TAG}__dz60":/src/qmk_firmware/keyboards/dztech/dz60rgb_ansi/keymaps/${KEYMAP_NAME}/ &> /dev/null
+	@pushd dz60 &> /dev/null \
+		&& find . -type f -not -name "*.hex" \
+		-exec docker cp {} "${DOCKER_IMAGE_TAG}__dz60":/src/qmk_firmware/keyboards/dztech/dz60rgb_ansi/keymaps/${KEYMAP_NAME}/{} \; \
+		&& popd &> /dev/null
+	@echo -e "${HLT} >>${RST} Building the firmware image for dz60"
+	@docker start -ia "${DOCKER_IMAGE_TAG}__dz60"
+	@echo -e "${HLT} >>${RST} Retrieving the built image"
+	@docker cp "${DOCKER_IMAGE_TAG}__dz60":/build/firmware.hex dz60/firmware.hex > /dev/null
+	@docker rm "${DOCKER_IMAGE_TAG}__dz60" > /dev/null
+
+dz60: image dz60/firmware.hex
+flash-dz60: dz60
+	@sudo echo -e "${HLT} >>${RST} Flashing firmware in ${PAUSE} seconds..."
+	@for count in {${PAUSE}..1}; do \
+		echo -e "${CPL}${HLT} >>${RST} Flashing firmware in $$count seconds..." ; \
+		sleep 1 ; \
+	done
+	@echo -e "${CPL}${HLT} >>${RST} Flashing firmware..."
+	@sudo dfu-programmer atmega32u4 erase --force
+	@sudo dfu-programmer atmega32u4 flash dz60/firmware.hex
+	@sudo dfu-programmer atmega32u4 reset
+	@echo -e "${HLT} >>${RST} Finished"
+# Falcon-8 Macro Pad (Device may be FUBARed)
+falcon8/myfalcon:
+	@echo -e "${HLT} >>${RST} Retrieiving Falcon firmware builder..."
+	@curl -L -o falcon8/myfalcon "https://github.com/dshahbaz/myfalcon/releases/download/v0.3/myfalcon.linux"
+	@chmod +x falcon8/myfalcon
+
+falcon8/firmware.bin: falcon8/myfalcon falcon8/layout.textpb
+	@echo -e "${HLT} >>${RST} Compiling new firmware..."
+	@falcon8/myfalcon -text_proto falcon8/layout.textpb -firmware_bin_path falcon8/firmware.bin
+	@echo -e "${HLT} >>${RST} Finished"
+
+falcon8: falcon8/firmware.bin
+tmp/firmware.bin: falcon8/firmware.bin
+	@echo -e "${HLT} >>${RST} Connecting to the device..."
+	@mkdir -p tmp/
+	@sudo mount /dev/disk/by-label/CRP\\x20DISABLD tmp
+	@echo -e "${HLT} >>${RST} Loading firmware onto device..."
+	@sudo cp falcon8/firmware.bin tmp/firmware.bin
+	@echo -e "${HLT} >>${RST} Disconnecting to the device..."
+	@sudo umount tmp
+
+flash-falcon8: tmp/firmware.bin
