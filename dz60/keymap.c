@@ -64,12 +64,12 @@ enum CUSTOM_KEYCODES {
 #define KVM_CMD(STR) MACRO_SEND_STRING(KVM_MOD STR)
 #else
 #define KVM_CMD(STR) \
-    if (record->event.pressed) { set_error(); } \
+    if (record->event.pressed) { setError(); } \
     break;
 #endif
 
 uint8_t error_indicator = 0;
-void set_error() {
+void setError(void) {
     error_indicator = 255;
 }
 
@@ -224,6 +224,59 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  └────┴────┴────┴────────────────────────┴────┴────┴────┴────┘
      */
 
+#ifdef STARTUP_ANIMATION
+static uint16_t startup_timer;
+bool startup_animation;
+void startup_animation_begin(void) {
+    startup_timer = timer_read();
+    startup_animation = 1;
+    rgb_matrix_mode_noeeprom(STARTUP_ANIMATION);
+}
+
+bool startup_animation_running(void) {
+    return startup_animation && timer_elapsed(startup_timer) < STARTUP_ANIMATION_DURATION;
+}
+
+void startup_animation_end(void) {
+    if (!startup_animation)
+        return;
+
+    if (timer_elapsed(startup_timer) % 16 == 0) {
+        if (timer_elapsed(startup_timer) >= STARTUP_ANIMATION_DURATION) {
+            uint8_t v = rgb_matrix_get_val();
+            if (v <= 0) {
+                startup_animation = 0;
+                rgb_matrix_mode(BASE_RGB_MODE);
+                rgb_matrix_sethsv(BASE_RGB);
+            } else {
+                rgb_matrix_sethsv_noeeprom(
+                    rgb_matrix_get_hue(), rgb_matrix_get_sat(), v - 1
+                );
+            }
+        }
+    }
+}
+#else
+void startup_animation_begin(void) { }
+bool startup_animation_running(void) {
+    return 0;
+}
+void startup_animation_end(void) { }
+#endif
+
+void keyboard_post_init_user(void) {
+    startup_animation_begin();
+}
+
+void suspend_wakeup_init_user(void) {
+    rgb_matrix_set_suspend_state(false);
+    startup_animation_begin();
+}
+
+void housekeeping_task_user(void) {
+    startup_animation_end();
+}
+
 __attribute__ ((weak))
 void rgb_matrix_indicators_user(void) {
     if (g_suspend_state || rgb_matrix_config.enable) {
@@ -236,23 +289,26 @@ void rgb_matrix_indicators_user(void) {
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
+    if (startup_animation_running())
+        return state;
+
     uint8_t mode = rgb_matrix_get_mode();
     switch(biton32(state)) {
         case BASE:
-            rgb_matrix_sethsv_noeeprom(BASE_RGB);
+            rgb_matrix_sethsv(BASE_RGB);
             rgb_matrix_mode(BASE_RGB_MODE);
             break;
         case NO_DUALS:
             rgb_matrix_sethsv_noeeprom(NO_DUALS_RGB);
-            rgb_matrix_mode(NO_DUALS_RGB_MODE);
+            rgb_matrix_mode_noeeprom(NO_DUALS_RGB_MODE);
             break;
         case EXTENDED:
             rgb_matrix_sethsv_noeeprom(EXTENDED_RGB);
-            rgb_matrix_mode(EXTENDED_RGB_MODE);
+            rgb_matrix_mode_noeeprom(EXTENDED_RGB_MODE);
             break;
         case SPECIAL:
             rgb_matrix_sethsv_noeeprom(SPECIAL_RGB);
-            rgb_matrix_mode(SPECIAL_RGB_MODE);
+            rgb_matrix_mode_noeeprom(SPECIAL_RGB_MODE);
             break;
         default:
             rgb_matrix_mode(mode);

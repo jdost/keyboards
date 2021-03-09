@@ -8,13 +8,13 @@
 #define KVM_USE         // Add in KVM compatibilities and hotkeys
 
 // Tapping behavior -- dual purpose keys with behavior based on a "tap" vs a "hold"
-#define TAPPING_TERM 220   // ms to hold a tap key to switch to modifier
-#undef  PERMISSIVE_HOLD    // translates an ordered w/ dual purpose first as a
-                           //   modifier even if under tap term
+#define TAPPING_TERM 240    // ms to hold a tap key to switch to modifier
+#define PERMISSIVE_HOLD     // translates an ordered w/ dual purpose first as a
+                            //   modifier even if under tap term
 #undef  IGNORE_MOD_TAP_INTERRUPT
-                           // treat out of order key press with tap key as a tap of both
-#define RETRO_TAPPING      // a tap modifier without another key press is always a tap
-#define TAPPING_FORCE_HOLD // tapping followed by a hold are differentiated
+                            // treat out of order key press with tap key as a tap of both
+#define RETRO_TAPPING       // a tap modifier without another key press is always a tap
+#undef  TAPPING_FORCE_HOLD  // tapping followed by a hold are differentiated
 
 // Layer RGB Settings
 // Reactive Orange
@@ -26,8 +26,8 @@
 // Breathing Magenta
 #define EXTENDED_RGB        213, 255, 200
 #define EXTENDED_RGB_MODE   RGB_MATRIX_BREATHING
-// Breathing SpringGreen
-#define SPECIAL_RGB         106, 255, 200
+// Breathing Green
+#define SPECIAL_RGB         85, 255, 200
 #define SPECIAL_RGB_MODE    RGB_MATRIX_BREATHING
 
 // Per Key RGB
@@ -41,5 +41,10 @@
 #define RGB_MATRIX_STARTUP_HUE  28
 #define RGB_MATRIX_STARTUP_SAT  255
 #define RGB_MATRIX_STARTUP_VAL  200
+
+// RGB Matrix Startup Animation
+#undef  DISABLE_RGB_MATRIX_CYCLE_LEFT_RIGHT
+#define STARTUP_ANIMATION RGB_MATRIX_CYCLE_LEFT_RIGHT
+#define STARTUP_ANIMATION_DURATION 2500
 
 #endif
