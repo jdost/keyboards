@@ -14,6 +14,7 @@ enum Layer {
    NOTHING
 };
 
+//Key aliases
 #define DK_CLESC LCTL_T(KC_ESC)
 #define DK_SPCL1 LT(EXTENDED, KC_SPC)
 #define KC_L1 MO(EXTENDED)
@@ -21,6 +22,7 @@ enum Layer {
 #define ________ KC_TRNS
 #define ___XX___ KC_NO
 
+//Custom Keys
 enum CUSTOM_KEYCODES {
     CK_MPRV = SAFE_RANGE, // KVM safe alias for KC_MPRV
     CK_MPLY,              // KVM safe alias for KC_MPLY
@@ -35,24 +37,6 @@ enum CUSTOM_KEYCODES {
     CK_LYSWP,             // Swap default layers: BASE <-> NO_DUALS
 };
 
-// When this is built for use with a KVM, we need to replace some advanced keycodes
-//  for the media keys that get filtered out by the KVM with documented macros that
-//  get handled specially in the OS
-#ifdef KVM_USE
-#  undef KC_MPRV
-#  define KC_MPRV CK_MPRV
-#  undef KC_MPLY
-#  define KC_MPLY CK_MPLY
-#  undef KC_MNXT
-#  define KC_MNXT CK_MNXT
-#  undef KC_MUTE
-#  define KC_MUTE CK_MUTE
-#  undef KC_VOLD
-#  define KC_VOLD CK_VOLD
-#  undef KC_VOLU
-#  define KC_VOLU CK_VOLU
-#endif
-
 // Macro helper definitions
 #define MACRO_SEND_STRING(STR) \
     if (record->event.pressed) { \
@@ -64,15 +48,10 @@ enum CUSTOM_KEYCODES {
 #define KVM_CMD(STR) MACRO_SEND_STRING(KVM_MOD STR)
 #else
 #define KVM_CMD(STR) \
-    if (record->event.pressed) { setError(); } \
     break;
 #endif
 
-uint8_t error_indicator = 0;
-void setError(void) {
-    error_indicator = 255;
-}
-
+void start_animation(void);
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case CK_MPLY: // MPLY = GUI + DOWN
@@ -101,10 +80,38 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 layer_invert(NO_DUALS);
             }
             return false;
+        case RESET:
+            if (record->event.pressed) {
+                start_animation();
+                rgb_matrix_sethsv_noeeprom(0, 0xFF, 0x80);
+                rgb_matrix_mode_noeeprom(1);
+                return false;
+            } else {
+                reset_keyboard();
+            }
     }
     return true;
 }
 
+// When this is built for use with a KVM, we need to replace some advanced keycodes
+//  for the media keys that get filtered out by the KVM with documented macros that
+//  get handled specially in the OS
+#ifdef KVM_USE
+#  undef KC_MPRV
+#  define KC_MPRV CK_MPRV
+#  undef KC_MPLY
+#  define KC_MPLY CK_MPLY
+#  undef KC_MNXT
+#  define KC_MNXT CK_MNXT
+#  undef KC_MUTE
+#  define KC_MUTE CK_MUTE
+#  undef KC_VOLD
+#  define KC_VOLD CK_VOLD
+#  undef KC_VOLU
+#  define KC_VOLU CK_VOLU
+#endif
+
+// Keymaps
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* TEMPLATE LAYER
  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───────┐
@@ -210,6 +217,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 };
 
+//RGB LED Matrix
     /* LED INDEXES
  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───────┐
  │ 13│ 12│ 11│ 10│ 9 │ 8 │ 7 │ 6 │ 5 │ 4 │ 3 │ 2 │ 1 │   0   │
@@ -224,28 +232,39 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  └────┴────┴────┴────────────────────────┴────┴────┴────┴────┘
      */
 
-#ifdef STARTUP_ANIMATION
-static uint16_t startup_timer;
-bool startup_animation;
+//Startup Animation Handling
+/*
+ * For the startup animation, we set the effect in the _begin function and launch
+ * a timer.  Then the _running function is put in any callback that manipulates the
+ * matrix to skip out if the startup animation is ongoing.  Then the _end function
+ * is called to check if the animation has elapsed and then will trigger the short
+ * fade out effect before clearing the state.
+ */
+bool animation;
+static uint16_t animation_timer;
+void start_animation(void) {
+    animation_timer = timer_read();
+    animation = 1;
+}
+
 void startup_animation_begin(void) {
-    startup_timer = timer_read();
-    startup_animation = 1;
+    start_animation();
     rgb_matrix_mode_noeeprom(STARTUP_ANIMATION);
 }
 
 bool startup_animation_running(void) {
-    return startup_animation && timer_elapsed(startup_timer) < STARTUP_ANIMATION_DURATION;
+    return animation && timer_elapsed(animation_timer) < STARTUP_ANIMATION_DURATION;
 }
 
 void startup_animation_end(void) {
-    if (!startup_animation)
+    if (!animation)
         return;
 
-    if (timer_elapsed(startup_timer) % 16 == 0) {
-        if (timer_elapsed(startup_timer) >= STARTUP_ANIMATION_DURATION) {
+    if (timer_elapsed(animation_timer) % 16 == 0) {
+        if (timer_elapsed(animation_timer) >= STARTUP_ANIMATION_DURATION) {
             uint8_t v = rgb_matrix_get_val();
             if (v <= 0) {
-                startup_animation = 0;
+                animation = 0;
                 rgb_matrix_mode(BASE_RGB_MODE);
                 rgb_matrix_sethsv(BASE_RGB);
             } else {
@@ -256,13 +275,6 @@ void startup_animation_end(void) {
         }
     }
 }
-#else
-void startup_animation_begin(void) { }
-bool startup_animation_running(void) {
-    return 0;
-}
-void startup_animation_end(void) { }
-#endif
 
 void keyboard_post_init_user(void) {
     startup_animation_begin();
@@ -281,10 +293,6 @@ __attribute__ ((weak))
 void rgb_matrix_indicators_user(void) {
     if (g_suspend_state || rgb_matrix_config.enable) {
         return;
-    }
-    if (error_indicator) {
-        rgb_matrix_set_color(13, error_indicator, 0, 0);
-        error_indicator -= 8;
     }
 }
 
