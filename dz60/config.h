@@ -8,13 +8,17 @@
 #define KVM_USE         // Add in KVM compatibilities and hotkeys
 
 // Tapping behavior -- dual purpose keys with behavior based on a "tap" vs a "hold"
-#define TAPPING_TERM 250    // ms to hold a tap key to switch to modifier
-#define PERMISSIVE_HOLD     // translates an ordered w/ dual purpose first as a
+#define TAPPING_TERM 210    // ms to hold a tap key to switch to modifier
+#undef  PERMISSIVE_HOLD     // translates an ordered w/ dual purpose first as a
                             //   modifier even if under tap term
 #undef  IGNORE_MOD_TAP_INTERRUPT
                             // treat out of order key press with tap key as a tap of both
-#define RETRO_TAPPING       // a tap modifier without another key press is always a tap
+                            //   only applies to modifiers (not layers)
 #undef  TAPPING_FORCE_HOLD  // tapping followed by a hold are differentiated
+#define RETRO_TAPPING       // a tap modifier without another key press is always a tap
+#undef  HOLD_ON_OTHER_KEY_PRESS
+                            // switch to hold functionality if another key is pressed
+                            // while held down
 
 // Layer RGB Settings
 // Reactive Orange

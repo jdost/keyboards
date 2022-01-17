@@ -291,7 +291,7 @@ void housekeeping_task_user(void) {
 
 __attribute__ ((weak))
 void rgb_matrix_indicators_user(void) {
-    if (g_suspend_state || rgb_matrix_config.enable) {
+    if (rgb_matrix_config.enable) {
         return;
     }
 }

@@ -16,6 +16,7 @@ RUN apt-get update \
       gcc-arm-none-eabi \
       gcc-avr \
       git \
+      libhidapi-dev \
       libnewlib-arm-none-eabi \
       make \
       python3 \
@@ -32,7 +33,7 @@ RUN apt-get update \
       /usr/share/man \
       /usr/share/doc
 
-ARG QMK_CHECKOUT='0.12.5'
+ARG QMK_CHECKOUT='0.14.29'
 RUN git clone --recurse-submodules "$QMK_REMOTE" $SRC_FOLDER \
    && cd $SRC_FOLDER \
    && git checkout "$QMK_CHECKOUT" \
